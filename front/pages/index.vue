@@ -2,7 +2,7 @@
   <div class="home">
     <p class="home__logo">Busquery</p>
 
-    <div class="form">
+    <div class="form" ref="form">
       <input
         class="form__search"
         type="text"
@@ -30,29 +30,165 @@
       </button>
     </div>
 
-    <p>{{ query }}</p>
+    <div v-if="!loading">
+      <ul class="entries" ref="entries" v-if="entries !== undefined">
+        <li class="entry" v-for="entry in (entries as Array<BrregEntry>)">
+          <h3>{{ entry.navn }}</h3>
+          <p v-if="entry.forretningsadresse !== undefined">
+            {{ entry.forretningsadresse!.kommune }}
+          </p>
+          <p>
+            <a
+              :href="
+                entry.hjemmeside?.indexOf('://') === -1
+                  ? 'http://' + entry.hjemmeside
+                  : entry.hjemmeside
+              "
+              target="_blank"
+              rel="noopener"
+              >{{ entry.hjemmeside }}</a
+            >
+          </p>
+          <p>Ansatte: {{ entry.antallAnsatte }}</p>
+          <p v-if="entry.stiftelsesdato">Stiftelse: {{ dateFormat(entry.stiftelsesdato!) }}</p>
+          <p v-if="entry.naeringskode1 !== undefined">
+            Næring: {{ entry.naeringskode1!.beskrivelse }}
+          </p>
+        </li>
+      </ul>
+      <p class="error" v-else>{{ error }}</p>
+    </div>
+    <div class="loader" v-else></div>
   </div>
 </template>
+
+<script lang="ts" setup>
+useHead({
+  title: "Busquery",
+  meta: [
+    {
+      name: "apple-mobile-web-app-capable",
+      content: "yes",
+    },
+    {
+      name: "apple-mobile-web-app-status-bar-style",
+      content: "black-translucent",
+    },
+    {
+      name: "apple-mobile-web-app-orientations",
+      content: "portrait-any",
+    },
+    {
+      name: "theme-color",
+      content: "#f7a062",
+      media: "(prefers-color-scheme: dark)",
+    },
+  ],
+});
+</script>
 
 <script lang="ts">
 import axios from "axios";
 
+interface BrregSearch {
+  _embedded:
+    | {
+        enheter: Array<BrregEntry>;
+      }
+    | undefined;
+}
+
+interface BrregEntry {
+  organisasjonsnummer: number;
+  navn: string;
+  organisasjonsform: Object;
+  hjemmeside: string | undefined;
+  registreringsdatoEnhetsregisteret: Date | undefined;
+  frivilligMvaRegistrertBeskrivelser: Array<string> | undefined;
+  naeringskode1:
+    | {
+        beskrivelse: string;
+        kode: number;
+      }
+    | undefined;
+  antallAnsatte: number;
+  forretningsadresse: BrregAdresse | undefined;
+  stiftelsesdato: string | undefined;
+  sisteInnsendteAarsregnskap: Date;
+  konkurs: boolean;
+  underAvvikling: boolean;
+  underTvangsavviklingEllerTvangsopplosning: boolean;
+}
+
+interface BrregAdresse {
+  land: string;
+  landkode: string;
+  postnummer: number;
+  poststed: string;
+  adresse: Array<string>;
+  kommune: string;
+  kommunenummer: number;
+}
+
 export default {
   data: () => {
     const data: {
+      loading: boolean;
+      error: string | undefined;
       query: string;
-      businesses: undefined;
+      entries: Array<BrregEntry> | undefined;
     } = {
+      loading: false,
+      error: undefined,
       query: "",
-      businesses: undefined,
+      entries: undefined,
     };
 
     return data;
   },
+  mounted() {
+    window.onscroll = this.scrollHandle;
+  },
   methods: {
     search(): void {
-      (this.$refs['search'] as HTMLInputElement).blur();
-      alert(`Searching for ${this.query}`);
+      // Remove focus on input
+      (this.$refs["search"] as HTMLInputElement).blur();
+
+      // Get data from Brønnøysundregisteret
+      this.loading = true;
+      axios
+        .get<BrregSearch>(
+          `https://data.brreg.no/enhetsregisteret/api/enheter?navn=${this.query}&size=60`
+        )
+        .then((req) => {
+          this.loading = false;
+
+          if (req.data._embedded === undefined) {
+            this.entries = undefined;
+            this.error = "Ingen resultat";
+          } else {
+            this.error = undefined;
+            this.entries = req.data._embedded.enheter;
+          }
+        })
+        .catch((err) => {
+          this.loading = false;
+
+          console.error(err);
+        });
+    },
+    scrollHandle(_event: Event): void {
+      if (window.scrollY > 340) {
+        (this.$refs["form"] as HTMLDivElement).classList.add("sticky-search");
+        (this.$refs["entries"] as HTMLDivElement).classList.add("shift-down");
+      } else {
+        (this.$refs["form"] as HTMLDivElement).classList.remove(
+          "sticky-search"
+        );
+        (this.$refs["entries"] as HTMLDivElement).classList.remove(
+          "shift-down"
+        );
+      }
     },
   },
 };
@@ -71,6 +207,8 @@ export default {
     font-family: "Montserrat-Alt1";
     font-size: 4em;
     font-weight: 700;
+
+    user-select: none;
   }
 
   .form {
@@ -78,6 +216,7 @@ export default {
 
     display: flex;
     flex-direction: row;
+    border-radius: 0;
 
     &__search {
       width: 100%;
@@ -85,7 +224,8 @@ export default {
       flex-grow: 2;
 
       padding: 10px;
-      border: 10px solid #f7a062;
+      border: 10px solid var(--color);
+      border-radius: 0;
       border-right: none;
 
       font-size: 20px;
@@ -96,7 +236,7 @@ export default {
 
     $iconSize: 35px;
     &__btn {
-      background: #f7a062;
+      background: var(--color);
       color: white;
 
       border: none;
@@ -109,8 +249,76 @@ export default {
       }
     }
     &__btn:active {
-      background: #fc954b;
+      background: var(--active);
     }
   }
+
+  .entries {
+    margin: 20px 10px;
+    padding: 0;
+
+    list-style: none;
+
+    .entry {
+      margin-bottom: 20px;
+      padding: 10px;
+
+      color: var(--color);
+      background-color: white;
+
+      p {
+        margin: 5px 0;
+      }
+
+      h3 {
+        margin-top: 0;
+      }
+    }
+  }
+
+  .error {
+    width: 100%;
+    text-align: center;
+
+    margin-top: 30px;
+    font-size: 21px;
+  }
+
+  $loaderSize: 60px;
+  $loaderThickness: 8px;
+  .loader {
+    width: $loaderSize;
+    height: $loaderSize;
+
+    margin-top: 30px;
+    margin-right: auto;
+    margin-left: auto;
+
+    border: $loaderThickness solid white;
+    border-top: $loaderThickness solid var(--color);
+    border-radius: 50%;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.sticky-search {
+  max-width: calc(800px - (20px * 2));
+  width: calc(100% - 40px) !important;
+
+  position: fixed;
+  margin-top: -340px;
+}
+
+.shift-down {
+  margin-top: 155px !important;
 }
 </style>

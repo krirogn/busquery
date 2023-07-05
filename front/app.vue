@@ -26,6 +26,19 @@ console.info(
 // Montserrat-Alt1 from https://github.com/Differentunic/Montserrat-Alt1
 @import url("/fonts/Montserrat-Alt1/Montserrat-Alt1.css");
 
+// Variables
+:root {
+  // Orange
+  --color: #f7a062;
+  --accent: #ffe5d2;
+  --active: #fc954b;
+
+  // Blue
+  // --color: #62bef7;
+  // --accent: #d2f5ff;
+  // --active: #4ba9fc;
+}
+
 // Init
 html,
 body {
@@ -35,7 +48,7 @@ body {
   margin: 0;
   padding: 0;
 
-  background: linear-gradient(to right top, #ffe5d2 30%, #f7a062);
+  background: linear-gradient(to right top, var(--accent) 30%, var(--color));
 }
 
 * {
@@ -43,8 +56,8 @@ body {
 }
 
 a {
-  text-decoration: underline dotted 3px;
-  color: black;
+  text-decoration: underline solid 2px;
+  color: var(--color);
 }
 
 // DOM
