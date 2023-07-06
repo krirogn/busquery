@@ -12,6 +12,15 @@
         ref="search"
         autofocus
       />
+      <select class="form__select" v-model="filterPlace">
+        <option :value="undefined">Alle</option>
+        <option
+          v-for="municipality in municipalities?.body"
+          :value="municipality['kommunenummer']"
+        >
+          {{ municipality["kommunenavnNorsk"] }}
+        </option>
+      </select>
       <button class="form__btn" @click="search">
         <!-- magnifying-glass from https://heroicons.com/ -->
         <svg
@@ -50,7 +59,9 @@
             >
           </p>
           <p>Ansatte: {{ entry.antallAnsatte }}</p>
-          <p v-if="entry.stiftelsesdato">Stiftelse: {{ dateFormat(entry.stiftelsesdato!) }}</p>
+          <p v-if="entry.stiftelsesdato">
+            Stiftelse: {{ dateFormat(entry.stiftelsesdato!) }}
+          </p>
           <p v-if="entry.naeringskode1 !== undefined">
             Næring: {{ entry.naeringskode1!.beskrivelse }}
           </p>
@@ -63,6 +74,10 @@
 </template>
 
 <script lang="ts" setup>
+const { data: municipalities } = await useAsyncData("municipalities", () =>
+  queryContent("/municipalities").findOne()
+);
+
 useHead({
   title: "Busquery",
   meta: [
@@ -136,11 +151,13 @@ export default {
       loading: boolean;
       error: string | undefined;
       query: string;
+      filterPlace: number | undefined;
       entries: Array<BrregEntry> | undefined;
     } = {
       loading: false,
       error: undefined,
       query: "",
+      filterPlace: undefined,
       entries: undefined,
     };
 
@@ -156,10 +173,14 @@ export default {
 
       // Get data from Brønnøysundregisteret
       this.loading = true;
+      let request = `https://data.brreg.no/enhetsregisteret/api/enheter?navn=${this.query}&size=60`;
+
+      if (this.filterPlace !== undefined) {
+        request += `&kommunenummer=${this.filterPlace}`;
+      }
+
       axios
-        .get<BrregSearch>(
-          `https://data.brreg.no/enhetsregisteret/api/enheter?navn=${this.query}&size=60`
-        )
+        .get<BrregSearch>(request)
         .then((req) => {
           this.loading = false;
 
@@ -232,6 +253,19 @@ export default {
     }
     &__search:focus {
       outline: none;
+    }
+
+    &__select {
+      background: var(--color);
+      color: white;
+
+      border: none;
+      border-radius: 0;
+      cursor: pointer;
+      padding-left: 10px;
+    }
+    &__select:active {
+      background: var(--active);
     }
 
     $iconSize: 35px;
