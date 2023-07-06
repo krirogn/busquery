@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mariadb:10.10
+    volumes:
+      - ./db:/var/lib/mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: alpine
+      MYSQL_DATABASE: busquery
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    ports:
+      - 3306:3306
+
+  phpmyadmin:
+    image: arm64v8/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+    links:
+      - db
+    ports:
+      - 6060:80
+    volumes:
+      - /sessions
