@@ -2,6 +2,12 @@ use colored::Colorize;
 use spinners::{Spinner, Spinners};
 use sqlx::{mysql::MySqlPoolOptions, FromRow, MySql, Pool};
 
+/// Gets a MySQL connection pool from a MySQL URL
+///
+/// # Arguments
+///
+/// * `database_url` - A string that holds a connection URL to a
+/// MySQL server in this format `mysql://user:pass@server/database`
 pub async fn get_pool(database_url: String) -> Result<Pool<MySql>, ()> {
     let mut sp = Spinner::new(Spinners::Line, "Connecting to the database".into());
 
@@ -47,6 +53,21 @@ struct CountTablesQuery {
     tables: i64,
 }
 
+/// Checks if a MySQL database has a set of tables
+///
+/// # Arguments
+///
+/// * `pool` - A reference to a MySQL pool
+/// * `database` - A string slice that holds the name of the database
+/// * `tables` - A vector of string slices witch holds table names to be checked
+///
+/// # Examples
+///
+/// ```
+/// db::check_db(&pool, "databaseName", vec!["table1", "table2"])
+///     .await
+///     .expect("The database is corrupt or not set up correctly");
+/// ```
 pub async fn check_db(pool: &Pool<MySql>, database: &str, tables: Vec<&str>) -> Result<(), ()> {
     let mut sp = Spinner::new(Spinners::Line, "Checking the DB".into());
 
@@ -91,6 +112,13 @@ pub async fn check_db(pool: &Pool<MySql>, database: &str, tables: Vec<&str>) -> 
     Ok(())
 }
 
+/// A private helper function to create a panic that prints out
+/// an error message to stdio
+///
+/// # Arguments
+///
+/// * `sp` - A mutable reference to a Spinner instance
+/// * `tables` - A vector of string slices that hold table names to be printed
 fn check_db_panic(sp: &mut Spinner, tables: Vec<&str>) -> Result<(), ()> {
     sp.stop();
     print!("\r");

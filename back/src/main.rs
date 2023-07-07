@@ -23,16 +23,19 @@ async fn main() -> std::io::Result<()> {
     dotenvy::from_filename(".env.dev").ok();
 
     // Check for env variables
-    env_check(&["SERVER_HOST", "SERVER_PORT", "DATABASE_URL"]).unwrap();
+    env_check(&["SERVER_HOST", "SERVER_PORT", "DATABASE_URL"])
+        .expect("All the needed env variables were not set");
 
     // Get the database pool
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = db::get_pool(database_url).await.unwrap();
+    let pool = db::get_pool(database_url)
+        .await
+        .expect("Couldn't get a database pool");
 
     // Check the DB
     db::check_db(&pool, "busquery", vec!["businesses"])
         .await
-        .unwrap();
+        .expect("The database is corrupt or not set up correctly");
 
     // Start the actix server
     println!("========================================\n");
@@ -46,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         std::env::var("SERVER_PORT")
             .expect("SERVER_PORT must be set")
             .parse::<u16>()
-            .expect("SERVER_PORT couldn't be parsed as u16"),
+            .expect("SERVER_PORT couldn't be parsed as an u16"),
     ))?
     .run()
     .await
