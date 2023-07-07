@@ -1,7 +1,5 @@
-<h1 align="center">Busquery API</h1>
-
 <p align="center">
-    <img src="../wiki/busquery.svg" width="500">
+    <img src="../wiki/busquery-api.svg" width="500">
 </p>
 
 ## About
