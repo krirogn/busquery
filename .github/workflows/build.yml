@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Output to log
-        run: echo "${{ secrets.DATABASE_URL }}"
+        run: echo "$DATABASE_URL"
       - name: Login to registry
         run: echo ${{ secrets.SCALEWAY_SECRET_KEY }} | docker login rg.fr-par.scw.cloud/krirogn-busquery -u nologin --password-stdin
       - name: Build and tag the Docker image
