@@ -1,6 +1,12 @@
-# Nuxt 3 Minimal Starter
+<p align="center">
+    <img src="../wiki/busquery-front.svg" width="500">
+</p>
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+## About
+
+This README is a Nuxt 3 minimal starter. Look at the
+[Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction)
+to learn more.
 
 ## Setup
 
@@ -17,7 +23,7 @@ pnpm install
 yarn install
 ```
 
-## Development Server
+### Development Server
 
 Start the development server on `http://localhost:3000`:
 
@@ -32,7 +38,7 @@ pnpm run dev
 yarn dev
 ```
 
-## Production
+### Production
 
 Build the application for production:
 
