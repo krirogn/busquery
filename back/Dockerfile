@@ -5,6 +5,6 @@ COPY . .
 RUN cargo install --path .
 
 # Run step
-FROM gcr.io/distroless/cc-debian10
+FROM gcr.io/distroless/cc-debian11
 COPY --from=build /usr/local/cargo/bin/busquery-api /usr/local/bin/busquery-api
 CMD ["busquery-api"]
