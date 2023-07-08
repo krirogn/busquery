@@ -1,8 +1,11 @@
 <template>
   <div class="home">
+    <!-- The Busquery logo -->
     <p class="home__logo">Busquery</p>
 
+    <!-- The search bar -->
     <div class="form" ref="form">
+      <!-- The text field -->
       <input
         class="form__search"
         type="text"
@@ -12,6 +15,8 @@
         ref="search"
         autofocus
       />
+
+      <!-- The municipality drop-down -->
       <select class="form__select" v-model="filterPlace">
         <option :value="undefined">Alle</option>
         <option
@@ -21,6 +26,8 @@
           {{ municipality["kommunenavnNorsk"] }}
         </option>
       </select>
+
+      <!-- The search icon -->
       <button class="form__btn" @click="search">
         <!-- magnifying-glass from https://heroicons.com/ -->
         <svg
@@ -40,12 +47,38 @@
     </div>
 
     <div v-if="!loading">
+      <!-- The list of businesses -->
       <ul class="entries" ref="entries" v-if="entries !== undefined">
+        <!-- Business entry -->
         <li class="entry" v-for="entry in (entries as Array<BrregEntry>)">
+          <!-- Menu button -->
+          <button class="entry__btn">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="w-6 h-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+              />
+            </svg>
+          </button>
+
+          <!-- Entry modal -->
+          <dialog></dialog>
+
+          <!-- Business name -->
           <h3>{{ entry.navn }}</h3>
+          <!-- Business address -->
           <p v-if="entry.forretningsadresse !== undefined">
             {{ entry.forretningsadresse!.kommune }}
           </p>
+          <!-- Business website -->
           <p>
             <a
               :href="
@@ -58,52 +91,30 @@
               >{{ entry.hjemmeside }}</a
             >
           </p>
+          <!-- Number of employees -->
           <p>Ansatte: {{ entry.antallAnsatte }}</p>
+          <!-- Business established date -->
           <p v-if="entry.stiftelsesdato">
             Stiftelse: {{ dateFormat(entry.stiftelsesdato!) }}
           </p>
+          <!-- Business description -->
           <p v-if="entry.naeringskode1 !== undefined">
             Næring: {{ entry.naeringskode1!.beskrivelse }}
           </p>
         </li>
       </ul>
+
+      <!-- Error message -->
       <p class="error" v-else>{{ error }}</p>
     </div>
+    <!-- The loading spinner -->
     <div class="loader" v-else></div>
   </div>
 </template>
 
-<script lang="ts" setup>
-const { data: municipalities } = await useAsyncData("municipalities", () =>
-  queryContent("/municipalities").findOne()
-);
-
-useHead({
-  title: "Busquery",
-  meta: [
-    {
-      name: "apple-mobile-web-app-capable",
-      content: "yes",
-    },
-    {
-      name: "apple-mobile-web-app-status-bar-style",
-      content: "black-translucent",
-    },
-    {
-      name: "apple-mobile-web-app-orientations",
-      content: "portrait-any",
-    },
-    {
-      name: "theme-color",
-      content: "#f7a062",
-      media: "(prefers-color-scheme: dark)",
-    },
-  ],
-});
-</script>
-
 <script lang="ts">
 import axios from "axios";
+import { toRefs, toRef } from "vue";
 
 interface BrregSearch {
   _embedded:
@@ -146,16 +157,50 @@ interface BrregAdresse {
 }
 
 export default {
+  async setup() {
+    useHead({
+      title: "Busquery",
+      meta: [
+        {
+          name: "apple-mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "black-translucent",
+        },
+        {
+          name: "apple-mobile-web-app-orientations",
+          content: "portrait-any",
+        },
+        {
+          name: "theme-color",
+          content: "#f7a062",
+          media: "(prefers-color-scheme: dark)",
+        },
+      ],
+    });
+
+    const { data: municipalities } = await useAsyncData("municipalities", () =>
+      queryContent("/municipalities").findOne()
+    );
+
+    return {
+      municipalities,
+    };
+  },
   data: () => {
     const data: {
       loading: boolean;
       error: string | undefined;
+      saved: Array<Object> | undefined;
       query: string;
       filterPlace: number | undefined;
       entries: Array<BrregEntry> | undefined;
     } = {
       loading: false,
       error: undefined,
+      saved: undefined,
       query: "",
       filterPlace: undefined,
       entries: undefined,
@@ -163,8 +208,15 @@ export default {
 
     return data;
   },
-  mounted() {
+  async mounted() {
     window.onscroll = this.scrollHandle;
+
+    // Get all saved businesses
+    const apiUrl = useAppConfig().apiUrl;
+
+    axios(apiUrl + "business/all")
+      .then((r) => (this.saved = r.data))
+      .catch((err) => console.error(err));
   },
   methods: {
     search(): void {
@@ -294,11 +346,58 @@ export default {
     list-style: none;
 
     .entry {
+      position: relative;
+
       margin-bottom: 20px;
       padding: 10px;
 
       color: var(--color);
       background-color: white;
+
+      $entryBtnSize: 25px;
+      $entryBtnPadding: 10px;
+      &__btn {
+        width: $entryBtnSize;
+        height: $entryBtnSize;
+
+        position: absolute;
+        top: $entryBtnPadding;
+        right: $entryBtnPadding;
+
+        border-radius: 0;
+        border: 2px solid var(--color);
+
+        color: var(--color);
+        background-color: white;
+        cursor: pointer;
+
+        $entryBtnIconSize: 18px;
+        svg {
+          width: $entryBtnIconSize;
+          height: $entryBtnIconSize;
+
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+      }
+      &__btn:active {
+        border: none;
+
+        color: white;
+        background-color: var(--color);
+      }
+
+      &__btn__active {
+        border: none;
+
+        color: white;
+        background-color: var(--color);
+      }
+      &__btn__active:active {
+        background-color: var(--active);
+      }
 
       p {
         margin: 5px 0;
