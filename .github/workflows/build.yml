@@ -12,15 +12,13 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ vars.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v2
 
       - name: Login to registry
         run: echo ${{ secrets.SCALEWAY_SECRET_KEY }} | docker login rg.fr-par.scw.cloud/krirogn-busquery -u nologin --password-stdin
       - name: Create DB env file
-        run: echo "DATABASE_URL=$DATABASE_URL" > .env
+        run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
       - name: Test output DB env file
         run: cat .env
       - name: Build and tag the Docker image
