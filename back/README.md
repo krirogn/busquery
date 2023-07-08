@@ -23,7 +23,7 @@ development the test credentials and secrets will be loaded from a
 
 To start up the development server, you run this docker command
 ```shell
-docker compose -f compose-dev-server.yaml up
+docker compose up
 ```
 
 This starts up the SQL server with a
