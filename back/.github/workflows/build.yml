@@ -1,0 +1,23 @@
+name: Build and push to Scaleway registry - Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: back
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to registry
+        run: echo ${{ secrets.SCALEWAY_SECRET_KEY }} | docker login rg.fr-par.scw.cloud/krirogn-busquery -u nologin --password-stdin
+      - name: Build and tag the Docker image
+        run: docker build -t rg.fr-par.scw.cloud/krirogn-busquery/busquery-api:latest .
+      - name: Push the Docker image to the registry
+        run: docker push rg.fr-par.scw.cloud/krirogn-busquery/busquery-api:latest

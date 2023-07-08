@@ -15,3 +15,4 @@ sqlx = { version = "0.6.3", features = ["runtime-tokio-native-tls", "mysql"] }
 colored = "2.0.0"
 dotenvy = "0.15.7"
 spinners = "4.1.0"
+actix-cors = "0.6.4"

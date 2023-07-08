@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{web::Data, App, HttpServer};
 use colored::Colorize;
 use sqlx::{MySql, Pool};
@@ -40,7 +41,11 @@ async fn main() -> std::io::Result<()> {
     // Start the actix server
     println!("========================================\n");
     HttpServer::new(move || {
+        // Set CORS
+        let cors = Cors::permissive();
+
         App::new()
+            .wrap(cors)
             .configure(routes::config)
             .app_data(Data::new(AppState { db: pool.clone() }))
     })
