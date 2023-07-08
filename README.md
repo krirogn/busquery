@@ -1,3 +1,6 @@
-# Busquery
+<p align="center">
+    <img src="./wiki/busquery.svg" width="500">
+</p>
 
-The monorepo for the Busquery web application.
+---
+This is the monorepo for the Busquery web application.
