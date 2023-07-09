@@ -3,6 +3,8 @@ name: Build and push to Scaleway registry - Production
 on:
   push:
     branches: [main]
+    paths:
+      - 'back/**'
   workflow_dispatch:
 
 defaults:
