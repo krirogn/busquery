@@ -3,4 +3,6 @@
 </p>
 
 ---
-This is the monorepo for the Busquery web application.
+<p align="center">
+    This is the monorepo for the Busquery web application.
+</p>
