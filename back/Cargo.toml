@@ -1,6 +1,6 @@
 [package]
 name = "busquery-api"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 publish = false
 authors = ["Kristian Fredrik Rognsvaag <kf@krirogn.dev>"]

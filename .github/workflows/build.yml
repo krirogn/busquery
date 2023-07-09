@@ -19,8 +19,6 @@ jobs:
         run: echo ${{ secrets.SCALEWAY_SECRET_KEY }} | docker login rg.fr-par.scw.cloud/krirogn-busquery -u nologin --password-stdin
       - name: Create DB env file
         run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-      - name: Test output DB env file
-        run: cat .env
       - name: Build and tag the Docker image
         run: docker build -t rg.fr-par.scw.cloud/krirogn-busquery/busquery-api:latest .
       - name: Push the Docker image to the registry
