@@ -1,3 +1,3 @@
 export default defineAppConfig({
-  apiUrl: "http://localhost:8080/",
+  apiUrl: "https://krirognbusqueryajavxgxz-busquery-api.functions.fnc.fr-par.scw.cloud/",
 });

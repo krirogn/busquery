@@ -49,10 +49,54 @@
     <div v-if="!loading">
       <!-- The list of businesses -->
       <ul class="entries" ref="entries" v-if="entries !== undefined">
+        <!-- Entry modal -->
+        <dialog class="entries__modal" ref="entriesModal" @click="modalClick">
+          <div class="entries__modal__body" v-if="selectedEntry !== undefined">
+            <h3 class="entries__modal__body__title">
+              {{ selectedEntry?.navn }}
+            </h3>
+            <p class="entries__modal__body__paragraph">Notater</p>
+            <textarea
+              class="entries__modal__body__input"
+              cols="50"
+              rows="10"
+              spellcheck="false"
+              ref="modalText"
+            ></textarea>
+            <br />
+
+            <button
+              v-if="!entryIsSaved(selectedEntry)"
+              class="entries__modal__body__btn entries__modal__body__btn__left"
+              @click="modalSave"
+            >
+              Lagre
+            </button>
+            <button
+              v-else
+              class="entries__modal__body__btn entries__modal__body__btn__left"
+              @click="modalUpdate"
+            >
+              Oppdater
+            </button>
+
+            <button
+              class="entries__modal__body__btn entries__modal__body__btn__right"
+              @click="modalDelete"
+            >
+              Slett
+            </button>
+          </div>
+        </dialog>
+
         <!-- Business entry -->
         <li class="entry" v-for="entry in (entries as Array<BrregEntry>)">
           <!-- Menu button -->
-          <button class="entry__btn">
+          <button
+            class="entry__btn"
+            :class="{ entry__btn__active: entryIsSaved(entry) }"
+            @click="entryModal(entry)"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -69,9 +113,6 @@
             </svg>
           </button>
 
-          <!-- Entry modal -->
-          <dialog></dialog>
-
           <!-- Business name -->
           <h3>{{ entry.navn }}</h3>
           <!-- Business address -->
@@ -79,7 +120,7 @@
             {{ entry.forretningsadresse!.kommune }}
           </p>
           <!-- Business website -->
-          <p>
+          <p v-if="entry.hjemmeside !== undefined">
             <a
               :href="
                 entry.hjemmeside?.indexOf('://') === -1
@@ -91,6 +132,7 @@
               >{{ entry.hjemmeside }}</a
             >
           </p>
+          <p v-else><b>Har ingen hjemmeside</b></p>
           <!-- Number of employees -->
           <p>Ansatte: {{ entry.antallAnsatte }}</p>
           <!-- Business established date -->
@@ -112,9 +154,37 @@
   </div>
 </template>
 
+<script lang="ts" setup>
+useHead({
+  title: "Busquery",
+  meta: [
+    {
+      name: "apple-mobile-web-app-capable",
+      content: "yes",
+    },
+    {
+      name: "apple-mobile-web-app-status-bar-style",
+      content: "black-translucent",
+    },
+    {
+      name: "apple-mobile-web-app-orientations",
+      content: "portrait-any",
+    },
+    {
+      name: "theme-color",
+      content: "#f7a062",
+      media: "(prefers-color-scheme: dark)",
+    },
+  ],
+});
+
+const { data: municipalities } = await useAsyncData("municipalities", () =>
+  queryContent("/municipalities").findOne()
+);
+</script>
+
 <script lang="ts">
 import axios from "axios";
-import { toRefs, toRef } from "vue";
 
 interface BrregSearch {
   _embedded:
@@ -156,47 +226,21 @@ interface BrregAdresse {
   kommunenummer: number;
 }
 
+interface Saved {
+  org: number;
+  notes: string;
+}
+
 export default {
-  async setup() {
-    useHead({
-      title: "Busquery",
-      meta: [
-        {
-          name: "apple-mobile-web-app-capable",
-          content: "yes",
-        },
-        {
-          name: "apple-mobile-web-app-status-bar-style",
-          content: "black-translucent",
-        },
-        {
-          name: "apple-mobile-web-app-orientations",
-          content: "portrait-any",
-        },
-        {
-          name: "theme-color",
-          content: "#f7a062",
-          media: "(prefers-color-scheme: dark)",
-        },
-      ],
-    });
-
-    const { data: municipalities } = await useAsyncData("municipalities", () =>
-      queryContent("/municipalities").findOne()
-    );
-
-    return {
-      municipalities,
-    };
-  },
   data: () => {
     const data: {
       loading: boolean;
       error: string | undefined;
-      saved: Array<Object> | undefined;
+      saved: Array<Saved> | undefined;
       query: string;
       filterPlace: number | undefined;
       entries: Array<BrregEntry> | undefined;
+      selectedEntry: BrregEntry | undefined;
     } = {
       loading: false,
       error: undefined,
@@ -204,21 +248,26 @@ export default {
       query: "",
       filterPlace: undefined,
       entries: undefined,
+      selectedEntry: undefined,
     };
 
     return data;
   },
   async mounted() {
+    // Set on scroll handler function
     window.onscroll = this.scrollHandle;
 
     // Get all saved businesses
-    const apiUrl = useAppConfig().apiUrl;
-
-    axios(apiUrl + "business/all")
-      .then((r) => (this.saved = r.data))
-      .catch((err) => console.error(err));
+    this.pullEntries();
   },
   methods: {
+    pullEntries(): void {
+      const apiUrl = useAppConfig().apiUrl;
+
+      axios(apiUrl + "business/all")
+        .then((r) => (this.saved = r.data))
+        .catch((err) => console.error(err));
+    },
     search(): void {
       // Remove focus on input
       (this.$refs["search"] as HTMLInputElement).blur();
@@ -263,6 +312,88 @@ export default {
         );
       }
     },
+    entryIsSaved(entry: BrregEntry): boolean {
+      let comps = this.saved?.map((s) => s.org == entry.organisasjonsnummer);
+
+      return comps?.includes(true) || false;
+    },
+    entryModal(entry: BrregEntry): void {
+      this.selectedEntry = entry;
+      (this.$refs["entriesModal"] as HTMLDialogElement).showModal();
+
+      this.$nextTick(() => {
+        if (this.entryIsSaved(entry)) {
+          let s = this.saved?.find(
+            (element) => element.org == entry.organisasjonsnummer
+          );
+          (this.$refs["modalText"] as HTMLTextAreaElement).value =
+            s?.notes || "";
+        }
+      });
+    },
+    modalClose(): void {
+      (this.$refs["modalText"] as HTMLTextAreaElement).value = "";
+      (this.$refs["entriesModal"] as HTMLDialogElement).close();
+      this.selectedEntry = undefined;
+    },
+    modalClick(event: Event): void {
+      if (event.target == (this.$refs["entriesModal"] as HTMLDialogElement)) {
+        this.modalClose();
+      }
+    },
+    modalSave(): void {
+      const apiUrl = useAppConfig().apiUrl;
+
+      // Save business to list
+      axios
+        .post(
+          apiUrl + `business/${this.selectedEntry?.organisasjonsnummer}/add`,
+          {
+            notes: (this.$refs["modalText"] as HTMLTextAreaElement).value,
+          }
+        )
+        .catch((err) => console.error(err))
+        .then(() => {
+          // Update entries
+          this.modalClose();
+          this.pullEntries();
+          this.$forceUpdate();
+        });
+    },
+    modalUpdate(): void {
+      const apiUrl = useAppConfig().apiUrl;
+
+      // Save business to list
+      axios
+        .put(
+          apiUrl + `business/${this.selectedEntry?.organisasjonsnummer}/update`,
+          {
+            notes: (this.$refs["modalText"] as HTMLTextAreaElement).value,
+          }
+        )
+        .catch((err) => console.error(err))
+        .then(() => {
+          // Update entries
+          this.modalClose();
+          this.pullEntries();
+        });
+    },
+    modalDelete(): void {
+      const apiUrl = useAppConfig().apiUrl;
+
+      // Delete business from list
+      axios
+        .delete(
+          apiUrl + `business/${this.selectedEntry?.organisasjonsnummer}/remove`
+        )
+        .catch((err) => console.error(err))
+        .then(() => {
+          // Update entries
+          this.modalClose();
+          this.pullEntries();
+          this.$forceUpdate();
+        });
+    },
   },
 };
 </script>
@@ -290,6 +421,8 @@ export default {
     display: flex;
     flex-direction: row;
     border-radius: 0;
+
+    z-index: 100;
 
     &__search {
       width: 100%;
@@ -344,6 +477,64 @@ export default {
     padding: 0;
 
     list-style: none;
+
+    &__modal {
+      padding: 0;
+
+      border: none;
+
+      &__body {
+        width: 100%;
+        height: 100%;
+
+        position: relative;
+
+        padding: 10px;
+        margin: 0;
+
+        color: var(--color);
+        background-color: white;
+
+        &__title {
+          margin-top: 0;
+        }
+
+        &__paragraph {
+          margin: 0;
+        }
+
+        &__input {
+          width: 100%;
+
+          border: 2px solid var(--color);
+        }
+        &__input:focus {
+          outline: none;
+        }
+
+        &__btn {
+          background: var(--color);
+          color: white;
+
+          margin: 5px 0 10px 0;
+          padding: 5px 10px;
+
+          border: none;
+          cursor: pointer;
+
+          &__left {
+            float: left;
+          }
+
+          &__right {
+            float: right;
+          }
+        }
+        &__btn:active {
+          background-color: var(--active);
+        }
+      }
+    }
 
     .entry {
       position: relative;
