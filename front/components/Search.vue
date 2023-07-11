@@ -4,7 +4,7 @@
     <input
       class="search__field"
       type="text"
-      placeholder="Søk bedrifter..."
+      placeholder="Søk etter bedrifter..."
       v-model="query"
       v-on:keyup.enter="search"
       ref="search"
@@ -145,6 +145,7 @@ export default {
 
     border: none;
     border-radius: 0;
+    outline: none;
     cursor: pointer;
     padding-left: 10px;
   }

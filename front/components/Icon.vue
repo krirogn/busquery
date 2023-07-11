@@ -2,6 +2,7 @@
   <div
     class="icon"
     :style="{
+      width: size,
       height: size,
       top: padding,
       right: padding,
